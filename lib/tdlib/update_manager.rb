@@ -32,16 +32,16 @@ class TD::UpdateManager
       update = TD::Types.wrap(update)
       callback&.call(update)
 
-      p update
       match_handlers!(update, extra).each { |h| h.async.run(update) }
     end
   rescue StandardError => e
+    p update
     warn("Uncaught exception in update manager: #{e.message}")
+    return
   end
 
   def match_handlers!(update, extra)
     @mutex.synchronize do
-      p handlers
       matched_handlers = handlers.select { |h| h.match?(update, extra) }
       matched_handlers.each { |h| handlers.delete(h) if h.disposable? }
       matched_handlers

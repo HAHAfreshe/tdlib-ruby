@@ -116,7 +116,7 @@ class TD::Client
       if (type_const = TD::Types::LOOKUP_TABLE[update_type])
         update_type = TD::Types.const_get("TD::Types::#{type_const}")
       else
-        raise ArgumentError.new("Can't find class for #{update_type}")
+        #raise ArgumentError.new("Can't find class for #{update_type}")
       end
     end
 
