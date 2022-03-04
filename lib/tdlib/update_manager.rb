@@ -34,6 +34,8 @@ class TD::UpdateManager
 
       match_handlers!(update, extra).each { |h| h.async.run(update) }
     end
+  rescue StandardError => e
+    warn("Uncaught exception in update manager: #{e.message}")
   end
 
   def match_handlers!(update, extra)
