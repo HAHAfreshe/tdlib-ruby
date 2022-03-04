@@ -16,7 +16,7 @@ class TD::UpdateHandler
     action.call(update)
   rescue StandardError => e
     warn("Uncaught exception in handler #{self}: #{e.message}")
-    #raise
+    raise
   end
 
   def match?(update, extra = nil)
