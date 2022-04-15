@@ -4,25 +4,22 @@ require 'ffi'
 module TD::Api
   module_function
 
-  def client_create
-    Dl.td_json_client_create
+  def create_client
+    Dl.td_create_client_id
   end
 
-  def client_send(client, params)
-    Dl.td_json_client_send(client, params.to_json)
+  def client_send(client_id, params)
+    Dl.td_send(client_id, params.to_json)
   end
 
-  def client_execute(client, params)
-    Dl.td_json_client_execute(client, params.to_json)
-  end
-
-  def client_receive(client, timeout)
-    update = Dl.td_json_client_receive(client, timeout)
+  def client_receive(timeout)
+    update = Dl.td_receive(timeout)
     JSON.parse(update) if update
   end
 
-  def client_destroy(client)
-    Dl.td_json_client_destroy(client)
+  def client_execute(params)
+    update = Dl.td_execute(params.to_json)
+    JSON.parse(update) if update
   end
 
   def set_log_verbosity_level(level)
@@ -46,13 +43,14 @@ module TD::Api
 
         find_lib
 
-        attach_function :td_json_client_create, [], :pointer
-        attach_function :td_json_client_receive, [:pointer, :double], :string, blocking: true
-        attach_function :td_json_client_send, [:pointer, :string], :pointer, blocking: true
-        attach_function :td_json_client_execute, [:pointer, :string], :string, blocking: true
+        attach_function :td_create_client_id, [], :int
+        attach_function :td_receive, [:double], :string, blocking: true
+        attach_function :td_send, [:int, :string], :void
+        attach_function :td_execute, [:string], :string
         attach_function :td_json_client_destroy, [:pointer], :void
         attach_function :td_set_log_file_path, [:string], :int
         attach_function :td_set_log_max_file_size, [:long_long], :void
+        # TODO: use synchronous td_execute({'@type': 'setLogVerbosityLevel', 'new_verbosity_level': 1, '@extra': 1.01234})
         attach_function :td_set_log_verbosity_level, [:int], :void
 
         undef method_missing

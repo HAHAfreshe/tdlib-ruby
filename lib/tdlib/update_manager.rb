@@ -1,8 +1,7 @@
 class TD::UpdateManager
   TIMEOUT = 30
 
-  def initialize(td_client)
-    @td_client = td_client
+  def initialize
     @handlers = Concurrent::Array.new
     @mutex = Mutex.new
   end
@@ -13,9 +12,11 @@ class TD::UpdateManager
 
   alias << add_handler
 
-  def run(callback: nil)
+  def run
+    #@thread_pool.post do
+    #       puts 'post'
     Thread.start do
-      catch(:client_closed) { loop { handle_update(callback: callback); sleep 0.001 } }
+      loop { handle_update; sleep 0.001 }
       @mutex.synchronize { @handlers = [] }
     end
   end
@@ -24,13 +25,12 @@ class TD::UpdateManager
 
   attr_reader :handlers
 
-  def handle_update(callback: nil)
-    update = TD::Api.client_receive(@td_client, TIMEOUT)
+  def handle_update
+    update = TD::Api.client_receive(TIMEOUT)
 
     unless update.nil?
       extra  = update.delete('@extra')
       update = TD::Types.wrap(update)
-      callback&.call(update)
 
       match_handlers!(update, extra).each { |h| h.async.run(update) }
     end

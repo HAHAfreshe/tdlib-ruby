@@ -15,11 +15,11 @@ class TD::Client
   # @param [TD::UpdateManager] update_manager
   # @param [Numeric] timeout
   # @param [Hash] extra_config optional configuration hash that will be merged into tdlib client configuration
-  def initialize(td_client = TD::Api.client_create,
-                 update_manager = TD::UpdateManager.new(td_client),
+  def initialize(td_client_id = TD::Api.create_client,
+                 update_manager = TD::UpdateManager.new,
                  timeout: TIMEOUT,
                  **extra_config)
-    @td_client = td_client
+    @td_client_id = td_client_id
     @ready = false
     @alive = true
     @update_manager = update_manager
@@ -44,12 +44,16 @@ class TD::Client
             @ready_condition.broadcast
           end
         end
+      when TD::Types::AuthorizationState::Closed
+        @alive = false
+        @ready = false
+        return
       else
         # do nothing
       end
     end
 
-    @update_manager.run(callback: method(:handle_update))
+    @update_manager.run
     ready
   end
 
@@ -105,7 +109,8 @@ class TD::Client
   # @param [Hash] query
   def execute(query)
     return dead_client_error if dead?
-    TD::Api.client_execute(@td_client, query)
+
+    TD::Api.client_execute(query)
   end
 
   # Binds passed block as a handler for updates with type of *update_type*
@@ -149,6 +154,7 @@ class TD::Client
   # Stops update manager and destroys TDLib client
   def dispose
     return if dead?
+
     close.then { get_authorization_state }
   end
 
@@ -166,18 +172,10 @@ class TD::Client
 
   private
 
-  def handle_update(update)
-    return unless update.is_a?(TD::Types::Update::AuthorizationState) && update.authorization_state.is_a?(TD::Types::AuthorizationState::Closed)
-    @alive = false
-    @ready = false
-    sleep 0.001
-    TD::Api.client_destroy(@td_client)
-    throw(:client_closed)
-  end
-
   def send_to_td_client(query)
     return unless alive?
-    TD::Api.client_send(@td_client, query)
+
+    TD::Api.client_send(@td_client_id, query)
   end
 
   def timeout_error
