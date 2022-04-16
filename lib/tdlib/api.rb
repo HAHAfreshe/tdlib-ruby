@@ -1,4 +1,4 @@
-require 'json'
+require 'fast_jsonparser'
 require 'ffi'
 
 module TD::Api
@@ -14,12 +14,12 @@ module TD::Api
 
   def client_receive(timeout)
     update = Dl.td_receive(timeout)
-    JSON.parse(update) if update
+    FastJsonparser.parse(update, symbolize_keys: false) if update
   end
 
   def client_execute(params)
     update = Dl.td_execute(params.to_json)
-    JSON.parse(update) if update
+    FastJsonparser.parse(update, symbolize_keys: false) if update
   end
 
   def set_log_verbosity_level(level)
