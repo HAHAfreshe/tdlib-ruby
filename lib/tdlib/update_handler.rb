@@ -1,6 +1,4 @@
 class TD::UpdateHandler
-  include Concurrent::Async
-
   attr_reader :update_type, :extra
 
   def initialize(update_type, extra = nil, disposable = nil, &action)

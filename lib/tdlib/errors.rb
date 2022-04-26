@@ -1,6 +1,6 @@
 module TD
   class MissingLibPathError < StandardError
-    def initialize(message = 'Please, configure the path to tdlibjson library')
+    def initialize(message = "Please, configure the path to tdlibjson library")
       super
     end
   end

@@ -1,5 +1,5 @@
-require 'fast_jsonparser'
-require 'ffi'
+require "fast_jsonparser"
+require "ffi"
 
 module TD::Api
   module_function
@@ -45,7 +45,7 @@ module TD::Api
 
         attach_function :td_create_client_id, [], :int
         attach_function :td_receive, [:double], :string, blocking: true
-        attach_function :td_send, [:int, :string], :void
+        attach_function :td_send, %i[int string], :void, blocking: true
         attach_function :td_execute, [:string], :string
         attach_function :td_json_client_destroy, [:pointer], :void
         attach_function :td_set_log_file_path, [:string], :int
@@ -63,36 +63,36 @@ module TD::Api
       lib_path =
         if TD.config.lib_path
           TD.config.lib_path
-        elsif defined?(Rails) && File.exist?(Rails.root.join('vendor', file_name))
-          Rails.root.join('vendor')
+        elsif defined?(Rails) && File.exist?(Rails.root.join("vendor", file_name))
+          Rails.root.join("vendor")
         end
       full_path = File.join(lib_path.to_s, file_name)
       ffi_lib full_path
       full_path
     rescue LoadError
-      ffi_lib 'tdjson'
+      ffi_lib "tdjson"
       ffi_libraries.first.name
     end
 
     def lib_extension
       case os
-      when :windows then 'dll'
-      when :macos then 'dylib'
-      when :linux then 'so'
+      when :windows then "dll"
+      when :macos then "dylib"
+      when :linux then "so"
       else raise "#{os} OS is not supported"
       end
     end
 
     def os
-      host_os = RbConfig::CONFIG['host_os']
+      host_os = RbConfig::CONFIG["host_os"]
       case host_os
-      when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
+      when %r{mswin|msys|mingw|cygwin|bccwin|wince|emc}
         :windows
-      when /darwin|mac os/
+      when %r{darwin|mac os}
         :macos
-      when /linux/
+      when %r{linux}
         :linux
-      when /solaris|bsd/
+      when %r{solaris|bsd}
         :unix
       else
         raise "Unknown os: #{host_os.inspect}"

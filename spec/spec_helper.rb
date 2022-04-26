@@ -1,4 +1,4 @@
-require 'rspec'
-require 'tdlib/version'
+require "rspec"
+require "tdlib/version"
 
 include TD
