@@ -8,11 +8,7 @@ class TD::UpdateManager
   end
 
   def add_handler(handler)
-    if handler.extra
-      key = handler.extra
-    else
-      key = handler.update_type
-    end
+    key = handler.extra || handler.update_type
     @handlers[key] ||= []
     @handlers[key] << handler
   end
@@ -62,11 +58,7 @@ class TD::UpdateManager
   end
 
   def match_handlers!(update, extra)
-    key = if extra
-            extra
-          else
-            update.class
-          end
+    key = extra || update.class
     update_handlers = @handlers[key]
     return [] unless update_handlers
 

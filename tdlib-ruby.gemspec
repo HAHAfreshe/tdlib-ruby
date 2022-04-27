@@ -1,3 +1,4 @@
+require "English"
 lib = File.expand_path("lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require "tdlib/version"
@@ -12,7 +13,7 @@ Gem::Specification.new do |gem|
   gem.email         = "ask@southbridge.io"
   gem.homepage      = "https://github.com/centosadmin/tdlib-ruby"
 
-  gem.files         = `git ls-files`.split($/) - ["lib/tdlib/td_api_tl_parser.rb"]
+  gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR) - ["lib/tdlib/td_api_tl_parser.rb"]
 
   gem.executables   = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})

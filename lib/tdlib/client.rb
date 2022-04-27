@@ -45,7 +45,7 @@ class TD::Client
           @ready_condition.signal
         end
       when TD::Types::AuthorizationState::Closed
-        LOGGER.warn "was closed" + ("!" * 80)
+        LOGGER.warn "was closed"
         @alive = false
         @ready = false
         return
