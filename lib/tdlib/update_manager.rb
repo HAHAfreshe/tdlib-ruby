@@ -2,13 +2,19 @@ class TD::UpdateManager
   TIMEOUT = 30
 
   def initialize
-    @handlers = Concurrent::Array.new
+    @handlers = {}
     @mutex = Mutex.new
     @updates_count = 0
   end
 
   def add_handler(handler)
-    @mutex.synchronize { @handlers << handler }
+    if handler.extra
+      key = handler.extra
+    else
+      key = handler.update_type
+    end
+    @handlers[key] ||= []
+    @handlers[key] << handler
   end
 
   alias << add_handler
@@ -41,7 +47,7 @@ class TD::UpdateManager
         @reported_at = Time.now
         @updates_count = 0
       end
-      extra = update.delete("@extra")
+      extra = update.delete(:@extra)
       update = TD::Types.wrap(update)
 
       # puts "new update #{update.class}"
@@ -56,10 +62,20 @@ class TD::UpdateManager
   end
 
   def match_handlers!(update, extra)
-    @mutex.synchronize do
-      matched_handlers = handlers.select { |h| h.match?(update, extra) }
-      matched_handlers.each { |h| handlers.delete(h) if h.disposable? }
-      matched_handlers
+    key = if extra
+            extra
+          else
+            update.class
+          end
+    update_handlers = @handlers[key]
+    return [] unless update_handlers
+
+    persistent_handlers = update_handlers.reject(&:disposable)
+    if persistent_handlers.empty?
+      @handlers.delete(key)
+    else
+      @handlers[key] = persistent_handlers
     end
+    update_handlers
   end
 end

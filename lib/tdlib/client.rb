@@ -79,14 +79,10 @@ class TD::Client
     Async do
       condition = Async::Condition.new
       extra = SecureRandom.uuid
-      mutex = Mutex.new
 
       Async do
-        @update_manager << TD::UpdateHandler.new(TD::Types::Base, extra, true) do |update|
-          mutex.synchronize do
-            result = update
-            condition.signal(result)
-          end
+        @update_manager << TD::UpdateHandler.new(extra:, disposable: true) do |update|
+          condition.signal(update)
         end
       end
 
@@ -138,11 +134,7 @@ class TD::Client
       end
     end
 
-    unless update_type < TD::Types::Base
-      raise ArgumentError, "Wrong type specified (#{update_type}). Should be of kind TD::Types::Base"
-    end
-
-    @update_manager << TD::UpdateHandler.new(update_type, &)
+    @update_manager << TD::UpdateHandler.new(update_type:, &)
   end
 
   # returns task that will be fulfilled when client is ready

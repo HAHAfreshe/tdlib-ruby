@@ -14,12 +14,12 @@ module TD::Api
 
   def client_receive(timeout)
     update = Dl.td_receive(timeout)
-    FastJsonparser.parse(update, symbolize_keys: false) if update
+    FastJsonparser.parse(update) if update
   end
 
   def client_execute(params)
     update = Dl.td_execute(params.to_json)
-    FastJsonparser.parse(update, symbolize_keys: false) if update
+    FastJsonparser.parse(update) if update
   end
 
   def set_log_verbosity_level(level)
