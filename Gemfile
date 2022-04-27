@@ -6,4 +6,5 @@ gemspec
 
 group :development do
   gem "kramdown"
+  gem "rubocop-performance"
 end
