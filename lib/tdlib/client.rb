@@ -26,6 +26,7 @@ class TD::Client
     @config = TD.config.client.to_h.merge(extra_config)
     @ready_condition_mutex = Mutex.new
     @ready_condition = Async::Condition.new
+    @close_condition = Async::Condition.new
   end
 
   # Adds initial authorization state handler and runs update manager
@@ -45,10 +46,11 @@ class TD::Client
           @ready_condition.signal
         end
       when TD::Types::AuthorizationState::Closed
-        LOGGER.warn "was closed"
+        LOGGER.info "Received TD::Types::AuthorizationState::Closed"
         @alive = false
         @ready = false
-        return
+        @close_condition.signal
+        Async::Task.current.reactor.stop
       else
         # do nothing
       end
@@ -59,8 +61,12 @@ class TD::Client
         get_authorization_state
       end
       Async do
-        LOGGER.debug "run"
-        @update_manager.run
+        @update_manager.run do
+          Async do
+            dispose.wait
+            exit
+          end
+        end
       end
       Async do
         ready
@@ -164,13 +170,9 @@ class TD::Client
     return if dead?
 
     Async do
-      puts "trying to close"
       close
-      puts "after trying to close"
-      Process.kill(9, Process.pid)
+      @close_condition.wait
     end
-
-    get_authorization_state
   end
 
   def alive?

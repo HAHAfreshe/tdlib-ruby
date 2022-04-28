@@ -15,13 +15,14 @@ class TD::UpdateManager
 
   alias << add_handler
 
-  def run
+  def run(&interrupt_callback)
     Async do
       LOGGER.info "main loop started"
       @reported_at = Time.now
       loop do
         handle_update
         sleep 0.00001
+        Signal.trap('INT') { interrupt_callback.call }
       end
       @mutex.synchronize { @handlers = [] }
     end
@@ -32,7 +33,7 @@ class TD::UpdateManager
   attr_reader :handlers
 
   def handle_update
-    sleep 0.00001
+    sleep 0.00001 # This is needed
     update = TD::Api.client_receive(TIMEOUT)
 
     unless update.nil?
@@ -46,7 +47,6 @@ class TD::UpdateManager
       extra = update.delete(:@extra)
       update = TD::Types.wrap(update)
 
-      # puts "new update #{update.class}"
       match_handlers!(update, extra).each do |h|
         Async do
           h.run(update)
