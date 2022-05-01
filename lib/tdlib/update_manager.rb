@@ -21,7 +21,7 @@ class TD::UpdateManager
       @reported_at = Time.now
       loop do
         handle_update
-        sleep 0.00001
+        sleep 0.0001
         Signal.trap('INT') { interrupt_callback.call }
       end
       @mutex.synchronize { @handlers = [] }
@@ -33,14 +33,14 @@ class TD::UpdateManager
   attr_reader :handlers
 
   def handle_update
-    sleep 0.00001 # This is needed
+    sleep 0.0005 # This is needed to switch to another thread
     update = TD::Api.client_receive(TIMEOUT)
 
     unless update.nil?
       @updates_count += 1
       passed_time = Time.now - @reported_at
       if passed_time >= 1
-        LOGGER.warn "handled #{@updates_count / passed_time} updates per s"
+        # LOGGER.warn "handled #{@updates_count / passed_time} updates per s"
         @reported_at = Time.now
         @updates_count = 0
       end
