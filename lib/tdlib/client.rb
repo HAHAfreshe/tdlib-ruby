@@ -79,7 +79,6 @@ class TD::Client
   # @param [Hash] query
   # @return
   def broadcast(query)
-    LOGGER.debug "broadcast"
     return dead_client_error if dead?
 
     Async do
@@ -97,16 +96,22 @@ class TD::Client
       Async do |task|
         task.async do
           send_to_td_client(query)
-          LOGGER.debug "after send_to_td_client"
         end
       end
       result = condition.wait
       error = nil
       error = result if result.is_a?(TD::Types::Error)
       error = timeout_error if result.nil?
-      raise TD::Error, error if error
+      if error
+        raise TD::Error, error if error.code != 429
 
-      result
+        duration = error.message.match(%r{Too Many Requests: retry after (\d+)})[1].to_i
+        LOGGER.warn "Being rate limited... waiting #{duration} seconds"
+        sleep duration
+        broadcast(query)
+      else
+        result
+      end
     end
   end
 
@@ -133,7 +138,7 @@ class TD::Client
   # @yield [update] yields update to the block as soon as it's received
   def on(update_type, &)
     if update_type.is_a?(String)
-      if (type_const = TD::Types::LOOKUP_TABLE[update_type])
+      if (type_const = TD::Types::LOOKUP_TABLE[update_type.to_sym])
         update_type = TD::Types.const_get("TD::Types::#{type_const}")
       else
         raise ArgumentError, "Can't find class for #{update_type}"
