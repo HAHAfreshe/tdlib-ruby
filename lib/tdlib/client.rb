@@ -106,9 +106,11 @@ class TD::Client
         raise TD::Error, error if error.code != 429
 
         duration = error.message.match(%r{Too Many Requests: retry after (\d+)})[1].to_i
-        LOGGER.warn "Being rate limited... waiting #{duration} seconds"
-        sleep duration
-        broadcast(query)
+        LOGGER.warn "Being rate limited... #{query} waiting #{duration} seconds"
+        Async do
+          sleep duration
+          broadcast(query)
+        end.wait
       else
         result
       end

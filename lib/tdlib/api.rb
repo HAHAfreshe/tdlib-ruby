@@ -13,6 +13,7 @@ module TD::Api
   end
 
   def client_receive(timeout)
+    sleep 0.002
     update = Dl.td_receive(timeout)
     FastJsonparser.parse(update) if update
   end

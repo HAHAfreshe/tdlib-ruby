@@ -39,8 +39,14 @@ class TD::UpdateManager
     unless update.nil?
       @updates_count += 1
       passed_time = Time.now - @reported_at
-      if passed_time >= 30
-        LOGGER.debug "handled #{@updates_count / passed_time} updates per s"
+      if passed_time >= 15
+        rate = @updates_count / passed_time
+        if rate > 300
+          LOGGER.info "Updates per second: #{rate}"
+        else
+          LOGGER.debug "Updates per second: #{rate}"
+        end
+
         @reported_at = Time.now
         @updates_count = 0
       end
