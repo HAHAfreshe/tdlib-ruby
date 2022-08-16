@@ -1,11 +1,11 @@
-# -*- encoding: utf-8 -*-
-# stub: tdlib-ruby 3.1.0 ruby lib
-
-Gem::Specification.new do |s|
+require "English"
+lib = File.expand_path("lib", __dir__)
   s.name = "tdlib-ruby".freeze
-  s.version = "3.1.0"
+require "tdlib/version"
+  gem.summary       = "Ruby bindings and client for TDlib"
+  gem.description   = "Ruby bindings and client for TDlib"
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 0".freeze) if s.respond_to? :required_rubygems_version=
+  gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR) - ["lib/tdlib/td_api_tl_parser.rb"]
   s.require_paths = ["lib".freeze]
   s.authors = ["Southbridge".freeze]
   s.date = "2022-03-02"
@@ -19,19 +19,22 @@ Gem::Specification.new do |s|
   s.summary = "Ruby bindings and client for TDlib".freeze
   s.test_files = ["spec/integration/tdlib_spec.rb".freeze, "spec/spec_helper.rb".freeze, "spec/tdlib_spec.rb".freeze]
 
-  s.installed_by_version = "3.2.32" if s.respond_to? :installed_by_version
+  gem.executables   = gem.files.grep(%r{^bin/}).map { |f| File.basename(f) }
+  gem.require_paths = ["lib"]
 
-  if s.respond_to? :specification_version then
-    s.specification_version = 4
-  end
+  gem.add_runtime_dependency "async"
+  gem.add_runtime_dependency "dry-configurable", "~> 0.13"
+  gem.add_runtime_dependency "fast_jsonparser"
+  gem.add_runtime_dependency "ffi", "~> 1.0"
+  gem.add_runtime_dependency "tdlib-schema"
 
-  if s.respond_to? :add_runtime_dependency then
-    s.add_runtime_dependency(%q<dry-configurable>.freeze, ["~> 0.14.0"])
-    s.add_runtime_dependency(%q<concurrent-ruby>.freeze, ["~> 1.1"])
-    s.add_runtime_dependency(%q<ffi>.freeze, ["~> 1.0"])
-    s.add_runtime_dependency(%q<tdlib-schema>.freeze, [">= 0"])
-    s.add_development_dependency(%q<bundler>.freeze, ["~> 2.0"])
-    s.add_development_dependency(%q<rake>.freeze, ["~> 13.0"])
+  gem.add_development_dependency "bundler", "~> 2.0"
+  gem.add_development_dependency "pry", "~> 0.11"
+  gem.add_development_dependency "rake", "~> 13.0"
+  gem.add_development_dependency "rspec", "~> 3.0"
+  gem.add_development_dependency "rubygems-tasks", "~> 0.2"
+  gem.add_development_dependency "yard", "~> 0.9"
+  gem.metadata["rubygems_mfa_required"] = "true"
     s.add_development_dependency(%q<rspec>.freeze, ["~> 3.0"])
     s.add_development_dependency(%q<rubygems-tasks>.freeze, ["~> 0.2"])
     s.add_development_dependency(%q<yard>.freeze, ["~> 0.9"])
