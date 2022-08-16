@@ -1,4 +1,4 @@
-require "fast_jsonparser"
+require "oj"
 require "ffi"
 
 module TD::Api
@@ -13,14 +13,14 @@ module TD::Api
   end
 
   def client_receive(timeout)
-    sleep 0.002
+    #sleep 0.002
     update = Dl.td_receive(timeout)
-    FastJsonparser.parse(update) if update
+    Oj.load(update) if update
   end
 
   def client_execute(params)
     update = Dl.td_execute(params.to_json)
-    FastJsonparser.parse(update) if update
+    Oj.load(update) if update
   end
 
   def set_log_verbosity_level(level)
@@ -30,6 +30,7 @@ module TD::Api
   def set_log_file_path(path)
     Dl.td_set_log_file_path(path)
   end
+
 
   module Dl
     extend FFI::Library
@@ -48,7 +49,6 @@ module TD::Api
         attach_function :td_receive, [:double], :string, blocking: true
         attach_function :td_send, %i[int string], :void, blocking: true
         attach_function :td_execute, [:string], :string
-        attach_function :td_json_client_destroy, [:pointer], :void
         attach_function :td_set_log_file_path, [:string], :int
         attach_function :td_set_log_max_file_size, [:long_long], :void
         # TODO: use synchronous td_execute({'@type': 'setLogVerbosityLevel', 'new_verbosity_level': 1, '@extra': 1.01234})

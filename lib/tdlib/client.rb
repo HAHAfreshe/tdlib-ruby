@@ -115,7 +115,7 @@ class TD::Client
   # @param [Hash] query
   def execute(query)
     return dead_client_error if dead?
-    TD::Api.client_execute(@td_client, query)
+    TD::Api.client_execute(query)
   end
 
   # Binds passed block as a handler for updates with type of *update_type*
@@ -181,7 +181,6 @@ class TD::Client
     @alive = false
     @ready = false
     sleep 0.001
-    TD::Api.client_destroy(@td_client)
     throw(:client_closed)
   end
 

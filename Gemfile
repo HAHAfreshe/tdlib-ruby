@@ -1,6 +1,6 @@
 source 'https://rubygems.org'
 
-gem "fast_jsonparser"
+gem "oj"
 gemspec
 
 group :development do
