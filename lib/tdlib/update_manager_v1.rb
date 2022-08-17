@@ -5,6 +5,7 @@ class TD::UpdateManager
     @td_client = td_client
     @handlers = Concurrent::Array.new
     @mutex = Mutex.new
+    @updates_count = 0    
   end
 
   def add_handler(handler)
@@ -15,6 +16,7 @@ class TD::UpdateManager
 
   def run(callback: nil)
     Thread.start do
+      @reported_at = Time.now      
       catch(:client_closed) { loop { handle_update(callback: callback); sleep 0.001 } }
       @mutex.synchronize { @handlers = [] }
     end
@@ -27,11 +29,6 @@ class TD::UpdateManager
   def handle_update(callback: nil)
     update = TD::Api.client_receive(@td_client, TIMEOUT)
 
-    unless update.nil?
-
-    end
-    
-    
     unless update.nil?
       @updates_count += 1
       passed_time = Time.now - @reported_at
