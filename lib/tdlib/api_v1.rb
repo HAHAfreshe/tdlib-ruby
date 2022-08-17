@@ -1,26 +1,29 @@
-require "oj"
-require "ffi"
+require 'json'
+require 'oj'
+require 'ffi'
 
 module TD::Api
   module_function
 
-  def create_client
-    Dl.td_create_client_id
+  def client_create
+    Dl.td_json_client_create
   end
 
-  def client_send(client_id, params)
-    Dl.td_send(client_id, params.to_json)
+  def client_send(client, params)
+    Dl.td_json_client_send(client, params.to_json)
   end
 
-  def client_receive(timeout)
-    #sleep 0.002
-    update = Dl.td_receive(timeout)
+  def client_execute(client, params)
+    Dl.td_json_client_execute(client, params.to_json)
+  end
+
+  def client_receive(client, timeout)
+    update = Dl.td_json_client_receive(client, timeout)
     Oj.load(update) if update
   end
 
-  def client_execute(params)
-    update = Dl.td_execute(params.to_json)
-    Oj.load(update) if update
+  def client_destroy(client)
+    Dl.td_json_client_destroy(client)
   end
 
   def set_log_verbosity_level(level)
@@ -30,7 +33,6 @@ module TD::Api
   def set_log_file_path(path)
     Dl.td_set_log_file_path(path)
   end
-
 
   module Dl
     extend FFI::Library
@@ -45,13 +47,13 @@ module TD::Api
 
         find_lib
 
-        attach_function :td_create_client_id, [], :int
-        attach_function :td_receive, [:double], :string, blocking: true
-        attach_function :td_send, %i[int string], :void, blocking: true
-        attach_function :td_execute, [:string], :string
+        attach_function :td_json_client_create, [], :pointer
+        attach_function :td_json_client_receive, [:pointer, :double], :string, blocking: true
+        attach_function :td_json_client_send, [:pointer, :string], :pointer, blocking: true
+        attach_function :td_json_client_execute, [:pointer, :string], :string, blocking: true
+        attach_function :td_json_client_destroy, [:pointer], :void
         attach_function :td_set_log_file_path, [:string], :int
         attach_function :td_set_log_max_file_size, [:long_long], :void
-        # TODO: use synchronous td_execute({'@type': 'setLogVerbosityLevel', 'new_verbosity_level': 1, '@extra': 1.01234})
         attach_function :td_set_log_verbosity_level, [:int], :void
 
         undef method_missing
@@ -64,36 +66,36 @@ module TD::Api
       lib_path =
         if TD.config.lib_path
           TD.config.lib_path
-        elsif defined?(Rails) && File.exist?(Rails.root.join("vendor", file_name))
-          Rails.root.join("vendor")
+        elsif defined?(Rails) && File.exist?(Rails.root.join('vendor', file_name))
+          Rails.root.join('vendor')
         end
       full_path = File.join(lib_path.to_s, file_name)
       ffi_lib full_path
       full_path
     rescue LoadError
-      ffi_lib "tdjson"
+      ffi_lib 'tdjson'
       ffi_libraries.first.name
     end
 
     def lib_extension
       case os
-      when :windows then "dll"
-      when :macos then "dylib"
-      when :linux then "so"
+      when :windows then 'dll'
+      when :macos then 'dylib'
+      when :linux then 'so'
       else raise "#{os} OS is not supported"
       end
     end
 
     def os
-      host_os = RbConfig::CONFIG["host_os"]
+      host_os = RbConfig::CONFIG['host_os']
       case host_os
-      when %r{mswin|msys|mingw|cygwin|bccwin|wince|emc}
+      when /mswin|msys|mingw|cygwin|bccwin|wince|emc/
         :windows
-      when %r{darwin|mac os}
+      when /darwin|mac os/
         :macos
-      when %r{linux}
+      when /linux/
         :linux
-      when %r{solaris|bsd}
+      when /solaris|bsd/
         :unix
       else
         raise "Unknown os: #{host_os.inspect}"

@@ -1,6 +1,6 @@
 require 'tdlib/version'
 require 'dry/configurable'
-require 'concurrent-ruby'
+require "async"
 
 module TD
   extend Dry::Configurable
@@ -36,7 +36,13 @@ end
 
 require 'tdlib-schema'
 require 'tdlib/errors'
-require 'tdlib/api'
-require 'tdlib/client'
-require 'tdlib/update_handler'
-require 'tdlib/update_manager'
+#
+require 'tdlib/api_v1'
+require 'tdlib/client_v1'
+require 'tdlib/update_handler_v1'
+require 'tdlib/update_manager_v1'
+#
+require 'tdlib/api_v2'
+require 'tdlib/client_v2'
+require 'tdlib/update_handler_v2'
+require 'tdlib/update_manager_v2'

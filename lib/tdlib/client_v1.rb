@@ -1,7 +1,7 @@
 require 'securerandom'
 
 # Simple client for TDLib.
-class TD::Client
+class TD::ClientV1
   include Concurrent
   include TD::ClientMethods
 
@@ -15,7 +15,7 @@ class TD::Client
   # @param [TD::UpdateManager] update_manager
   # @param [Numeric] timeout
   # @param [Hash] extra_config optional configuration hash that will be merged into tdlib client configuration
-  def initialize(td_client = TD::Api.create_client,
+  def initialize(td_client = TD::Api.client_create,
                  update_manager = TD::UpdateManager.new(td_client),
                  timeout: TIMEOUT,
                  **extra_config)
@@ -85,18 +85,19 @@ class TD::Client
         error = nil
         error = result if result.is_a?(TD::Types::Error)
         error = timeout_error if result.nil?
-        #
+        
         if error
-          raise TD::Error, error if error.code != 429
+          raise TD::Error.new(error) if error.code != 429
 
           duration = error.message.match(%r{Too Many Requests: retry after (\d+)})[1].to_i
-          p "Being rate limited... #{query} waiting #{duration} seconds"
-          sleep duration
-          broadcast(query)
+          p "client :: Being rate limited... #{query} waiting #{duration} seconds"
+          #Async do
+            sleep duration
+            broadcast(query)
+          #end.wait
         else
           result
-        end        
-        result
+        end                
       end
     end
   end
@@ -115,7 +116,7 @@ class TD::Client
   # @param [Hash] query
   def execute(query)
     return dead_client_error if dead?
-    TD::Api.client_execute(query)
+    TD::Api.client_execute(@td_client, query)
   end
 
   # Binds passed block as a handler for updates with type of *update_type*
@@ -181,6 +182,7 @@ class TD::Client
     @alive = false
     @ready = false
     sleep 0.001
+    TD::Api.client_destroy(@td_client)
     throw(:client_closed)
   end
 
