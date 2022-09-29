@@ -19,7 +19,7 @@ module TD::Api
 
   def client_receive(client, timeout)
     update = Dl.td_json_client_receive(client, timeout)
-    FastJsonparser.parse(update) if update
+    FastJsonparser.parse(update, symbolize_keys: false)  if update
   end
 
   def client_destroy(client)
