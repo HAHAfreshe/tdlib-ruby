@@ -1,5 +1,5 @@
 require 'json'
-require 'oj'
+require 'fast_jsonparser'
 require 'ffi'
 
 module TD::Api
@@ -19,7 +19,7 @@ module TD::Api
 
   def client_receive(client, timeout)
     update = Dl.td_json_client_receive(client, timeout)
-    Oj.load(update) if update
+    FastJsonparser.parse(update) if update
   end
 
   def client_destroy(client)
