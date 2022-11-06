@@ -49,7 +49,7 @@ class TD::UpdateManagerV2
 
   def handle_update
     sleep 0.0005 # This is needed to switch to another thread
-    update = TD::Api.client_receive(TIMEOUT)
+    update = TD::ApiV2.client_receive(TIMEOUT)
     #p "updateManager :: update :: #{update}"
 
     unless update.nil?
