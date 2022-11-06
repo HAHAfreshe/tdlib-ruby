@@ -14,8 +14,8 @@ class TD::ClientV2
   # @param [TD::UpdateManager] update_manager
   # @param [Numeric] timeout
   # @param [Hash] extra_config optional configuration hash that will be merged into tdlib client configuration
-  def initialize(td_client_id = TD::Api.create_client,
-                 update_manager = TD::UpdateManager.new,
+  def initialize(td_client_id = TD::ApiV2.create_client,
+                 update_manager = TD::UpdateManagerV2.new,
                  timeout: TIMEOUT,
                  **extra_config)
     @td_client_id = td_client_id
@@ -101,7 +101,7 @@ class TD::ClientV2
 
       #Async do
         p "client :: broadcast :: @update_manager :: pre :: #{query}"        
-        @update_manager << TD::UpdateHandler.new(extra:, disposable: true) do |update|
+        @update_manager << TD::UpdateHandlerV2.new(extra:, disposable: true) do |update|
           condition.signal(update)
         end
         p "client :: broadcast :: @update_manager :: post"
@@ -153,7 +153,7 @@ class TD::ClientV2
   def execute(query)
     return dead_client_error if dead?
 
-    TD::Api.client_execute(query)
+    TD::ApiV2.client_execute(query)
   end
 
   # Binds passed block as a handler for updates with type of *update_type*
@@ -168,7 +168,7 @@ class TD::ClientV2
       end
     end
 
-    @update_manager << TD::UpdateHandler.new(update_type:, &)
+    @update_manager << TD::UpdateHandlerV2.new(update_type:, &)
   end
 
   # returns task that will be fulfilled when client is ready
@@ -223,7 +223,7 @@ class TD::ClientV2
   def send_to_td_client(query)
     return unless alive?
 
-    TD::Api.client_send(@td_client_id, query)
+    TD::ApiV2.client_send(@td_client_id, query)
   end
 
   def timeout_error
