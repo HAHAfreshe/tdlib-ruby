@@ -1,7 +1,8 @@
-require "securerandom"
+require 'securerandom'
 
 # Simple client for TDLib.
 class TD::ClientV2
+  include Concurrent
   include TD::ClientMethods
 
   TIMEOUT = 20
@@ -25,105 +26,63 @@ class TD::ClientV2
     @timeout = timeout
     @config = TD.config.client.to_h.merge(extra_config)
     @ready_condition_mutex = Mutex.new
-    @ready_condition = Async::Condition.new
-    @close_condition = Async::Condition.new
+    @ready_condition = ConditionVariable.new
   end
 
   # Adds initial authorization state handler and runs update manager
   # Returns future that will be fulfilled when client is ready
-
+  # @return [Concurrent::Promises::Future]
   def connect
-    p "client :: connect :: start"                            
     on TD::Types::Update::AuthorizationState do |update|
       case update.authorization_state
       when TD::Types::AuthorizationState::WaitTdlibParameters
         set_tdlib_parameters(**@config)
       when TD::Types::AuthorizationState::Closed
-        p "client :: connect :: Received TD::Types::AuthorizationState::Closed"
         @alive = false
         @ready = false
-        @close_condition.signal
-        Async::Task.current.reactor.stop
+        return
       else
         # do nothing
       end
     end
-    Async do
-      Async do
-        p "client :: connect :: get_authorization_state :: pre"
-        get_authorization_state
-        p "client :: connect :: get_authorization_state :: post"           
-      end
-      #Async do
-        @update_manager.run do
-          Async do
-            p "client :: dispose :: pre"    
-            dispose.wait #!!!!!!!
-            p "client :: dispose :: post"    
-            exit
-          end
-        end
-      #end
-      Async do
-        p "client :: connect :: ready :: pre"                    
-        ready
-        p "client :: connect :: ready :: post"                    
-      end
-      begin
-        Async::Task.current.reactor.stop
-      rescue
-        p 'rescue'
-      end
-    end
-    p "client :: connect :: end"   
-    
+
+    @update_manager.run
+    ready
   end
 
+  # Sends asynchronous request to the TDLib client and returns Promise object
+  # @see TD::ClientMethods List of available queries as methods
+  # @see https://github.com/ruby-concurrency/concurrent-ruby/blob/master/docs-source/promises.in.md
+  #   Concurrent::Promise documentation
   # @example
   #   client.broadcast(some_query).then { |result| puts result }.rescue { |error| puts [error.code, error.message] }
   # @param [Hash] query
-  # @return
+  # @return [Concurrent::Promises::Future]
   def broadcast(query)
-    return dead_client_error if dead?
+    return dead_client_promise if dead?
 
-    Async do
-      condition = Async::Condition.new
+    Promises.future do
+      condition = ConditionVariable.new
       extra = SecureRandom.uuid
+      result = nil
+      mutex = Mutex.new
 
-      #Async do
-        p "client :: broadcast :: @update_manager :: pre :: #{query}"        
-        @update_manager << TD::UpdateHandlerV2.new(extra:, disposable: true) do |update|
-          condition.signal(update)
+      @update_manager << TD::UpdateHandlerV2.new(TD::Types::Base, extra, true) do |update|
+        mutex.synchronize do
+          result = update
+          condition.signal
         end
-        p "client :: broadcast :: @update_manager :: post"
-      #end
-
-      query["@extra"] = extra
-      # TODO: simplify - raise error in recieve?
-      Async do |task|
-        p "client :: broadcast :: send_to_td_client :: pre = #{query}"        
-        task.async do
-          a = send_to_td_client(query)
-          p "client :: broadcast :: send_to_td_client :: post = #{a}"          
-        end
-        
       end
-      result = condition.wait
-      error = nil
-      error = result if result.is_a?(TD::Types::Error)
-      error = timeout_error if result.nil?
-      if error
-        raise TD::Error, error if error.code != 429
 
-        duration = error.message.match(%r{Too Many Requests: retry after (\d+)})[1].to_i
-        p "client :: Being rate limited... #{query} waiting #{duration} seconds"
-        Async do
-          p "client :: broadcast :: error :: pre"          
-          sleep duration
-          broadcast(query)
-          p "client :: broadcast :: error :: post"                    
-        end.wait
-      else
+      query['@extra'] = extra
+
+      mutex.synchronize do
+        send_to_td_client(query)
+        condition.wait(mutex, @timeout)
+        error = nil
+        error = result if result.is_a?(TD::Types::Error)
+        error = timeout_error if result.nil?
+        raise TD::Error.new(error) if error
         result
       end
     end
@@ -133,7 +92,7 @@ class TD::ClientV2
   # @param [Hash] query
   # @return [Hash]
   def fetch(query)
-    broadcast(query).wait
+    broadcast(query).value!
   end
 
   alias broadcast_and_receive fetch
@@ -150,51 +109,46 @@ class TD::ClientV2
   # Binds passed block as a handler for updates with type of *update_type*
   # @param [String, Class] update_type
   # @yield [update] yields update to the block as soon as it's received
-  def on(update_type, &)
+  def on(update_type, &action)
     if update_type.is_a?(String)
-      if (type_const = TD::Types::LOOKUP_TABLE[update_type.to_sym])
+      if (type_const = TD::Types::LOOKUP_TABLE[update_type])
         update_type = TD::Types.const_get("TD::Types::#{type_const}")
       else
-        raise ArgumentError, "Can't find class for #{update_type}"
+        raise ArgumentError.new("Can't find class for #{update_type}")
       end
     end
 
-    @update_manager << TD::UpdateHandlerV2.new(update_type:, &)
+    unless update_type < TD::Types::Base
+      raise ArgumentError.new("Wrong type specified (#{update_type}). Should be of kind TD::Types::Base")
+    end
+
+    @update_manager << TD::UpdateHandlerV2.new(update_type, &action)
   end
 
-  # returns task that will be fulfilled when client is ready
+  # returns future that will be fulfilled when client is ready
+  # @return [Concurrent::Promises::Future]
   def ready
-    Async do |task|
-      p "client :: ready :: task :: pre"
-      return dead_client_error if dead?
-      return self if ready?
+    return dead_client_promise if dead?
+    return Promises.fulfilled_future(self) if ready?
 
-      task.with_timeout(@timeout) do
-        Async do
-          p "client :: ready :: taskRun :: pre"          
-          next self if @ready          
-          @ready_condition.wait
-
-          next self if @ready
-
-          raise dead_client_error
-          p "client :: ready :: taskRun :: pre"                    
-        end
-      rescue Async::TimeoutError
-        raise TD::Error, timeout_error
+    Promises.future do
+      @ready_condition_mutex.synchronize do
+        next self if @ready || (@ready_condition.wait(@ready_condition_mutex, @timeout) && @ready)
+        raise TD::Error.new(timeout_error)
       end
-      p "client :: ready :: task :: post"      
     end
+  end
+
+  # @deprecated
+  def on_ready(&action)
+    ready.then(&action).value!
   end
 
   # Stops update manager and destroys TDLib client
   def dispose
     return if dead?
 
-    Async do
-      close
-      @close_condition.wait
-    end
+    close.then { get_authorization_state }
   end
 
   def alive?
@@ -218,10 +172,14 @@ class TD::ClientV2
   end
 
   def timeout_error
-    TD::Types::Error.new(code: 0, message: "Timeout error")
+    TD::Types::Error.new(code: 0, message: 'Timeout error')
+  end
+
+  def dead_client_promise
+    Promises.rejected_future(dead_client_error)
   end
 
   def dead_client_error
-    TD::Error.new(TD::Types::Error.new(code: 0, message: "TD client is dead"))
+    TD::Error.new(TD::Types::Error.new(code: 0, message: 'TD client is dead'))
   end
 end
