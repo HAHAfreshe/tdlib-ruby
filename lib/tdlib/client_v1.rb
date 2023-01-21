@@ -37,8 +37,6 @@ class TD::ClientV1
       case update.authorization_state
       when TD::Types::AuthorizationState::WaitTdlibParameters
         set_tdlib_parameters(**@config)
-      when TD::Types::AuthorizationState::WaitEncryptionKey
-        puts "WaitEncryptionKey"
       else
         # do nothing
       end
