@@ -1,14 +1,10 @@
 class TD::UpdateHandlerV2
-  attr_reader :update_type, :extra, :disposable
+  include Concurrent::Async
 
-  def initialize(update_type: nil, extra: nil, disposable: nil, &action)
-    if update_type.nil? && extra.nil?
-      raise ArgumentError, "Provide either 'update_type' or 'extra' parameter"
-    elsif !update_type.nil? && !extra.nil?
-      raise ArgumentError, "You can't specify both 'update_type' and 'extra' parameters"
-    elsif update_type && !(update_type < TD::Types::Base)
-      raise ArgumentError, "Wrong type specified (#{update_type}). Should be of kind TD::Types::Base"
-    end
+  attr_reader :update_type, :extra
+
+  def initialize(update_type, extra = nil, disposable = nil, &action)
+    super()
 
     @action = action
     @update_type = update_type
@@ -23,6 +19,10 @@ class TD::UpdateHandlerV2
     raise
   end
 
+  def match?(update, extra = nil)
+    update.is_a?(update_type) && (self.extra.nil? || self.extra == extra)
+  end
+
   def disposable?
     disposable
   end
@@ -35,5 +35,5 @@ class TD::UpdateHandlerV2
 
   private
 
-  attr_reader :action
+  attr_reader :action, :disposable
 end
