@@ -1,4 +1,4 @@
-require "oj"
+require "fast_jsonparser"
 require "ffi"
 
 module TD::ApiV2
@@ -15,12 +15,12 @@ module TD::ApiV2
   def client_receive(timeout)
     sleep 0.002
     update = Dl.td_receive(timeout)
-    Oj.load(update) if update
+    FastJsonparser.parse(update, symbolize_keys: false) if update
   end
 
   def client_execute(params)
     update = Dl.td_execute(params.to_json)
-    Oj.load(update) if update
+    FastJsonparser.parse(update, symbolize_keys: false) if update
   end
 
   def set_log_verbosity_level(level)
@@ -47,7 +47,7 @@ module TD::ApiV2
 
         attach_function :td_create_client_id, [], :int
         attach_function :td_receive, [:double], :string, blocking: true
-        attach_function :td_send, %i[int string], :void, blocking: true
+        attach_function :td_send, [:int, :string], :void
         attach_function :td_execute, [:string], :string
         attach_function :td_set_log_file_path, [:string], :int
         attach_function :td_set_log_max_file_size, [:long_long], :void
