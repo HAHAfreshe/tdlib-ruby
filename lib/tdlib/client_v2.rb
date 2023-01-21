@@ -37,16 +37,7 @@ class TD::ClientV2
     on TD::Types::Update::AuthorizationState do |update|
       case update.authorization_state
       when TD::Types::AuthorizationState::WaitTdlibParameters
-        set_tdlib_parameters(parameters: TD::Types::TdlibParameters.new(**@config))
-      when TD::Types::AuthorizationState::WaitEncryptionKey
-        Async do
-          p "client :: connect :: check_database_encryption_key :: pre"
-          check_database_encryption_key(encryption_key: TD.config.encryption_key).wait #!!!!!!
-
-          @ready = true
-          @ready_condition.signal
-          p "client :: connect :: check_database_encryption_key :: post"          
-        end
+        set_tdlib_parameters(**@config)
       when TD::Types::AuthorizationState::Closed
         p "client :: connect :: Received TD::Types::AuthorizationState::Closed"
         @alive = false
