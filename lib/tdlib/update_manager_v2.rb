@@ -22,23 +22,25 @@ class TD::UpdateManagerV2
   end
 
   private
-
   attr_reader :handlers
 
   def handle_update(profile, bus)
+    
+    updateNotifier = ['updatePoll', 'updateUser', 'updateUsersNearby', 'updateUserFullInfo' 'updateSupergroup', 'updateSupergroupFullInfo', 'updateNewChat', 'updateChatLastMessage', 'updateNewMessage', 'updateUserStatus', 'updateDeleteMessages', 'updateChatAction', 'updateMessageInteractionInfo', 'updateBasicGroup', 'updateMessageContent', 'updateMessageEdited', 'updateBasicGroupFullInfo', 'updateChatMember', 'updateChatMessageSender', 'updateChatMessageTtl', 'updateChatNotificationSettings', 'updateChatOnlineMemberCount', 'updateChatPendingJoinRequests', 'updateChatPermissions', 'updateChatPhoto', 'updateMessageSendAcknowledged', 'updateMessageSendSucceeded', 'updateNewCallbackQuery', 'updateNewChatJoinRequest', 'updateNewChosenInlineResult', 'updateNewCustomEvent', 'updateNewCustomQuery', 'updateNewInlineCallbackQuery', 'updateNewInlineQuery', 'updateNewPreCheckoutQuery', 'updateNewShippingQuery', 'updatePollAnswer', 'updateServiceNotification', 'updateCall', 'updateAnimatedEmojiMessageClicked']
+    
     update = TD::ApiV2.client_receive(TIMEOUT)
-    case update['@type'] 
-    when 'updateUser', 'updateSupergroup', 'updateSupergroupFullInfo', 'updateNewChat', 'updateChatLastMessage', 'updateNewMessage', 'updateUserStatus', 'updateDeleteMessages', 'updateChatAction', 'updateMessageInteractionInfo', 'updateBasicGroup', 'updateMessageContent', 'updateMessageEdited'
+    if  updateNotifier.include?(update['@type'])
+      #
+      data = update.to_h
+      #
       meta = {}
       meta[:type]   = :update
       meta[:profile]   = profile
-      meta[:timestamp] = DateTime.now.strftime('%Q')
-      bus.send(meta: meta, data: update.to_h)
-      
-    when 'updateConnectionState', 'updateOption', 'updateActiveEmojiReactions', 'updateUnreadChatCount', 'updateScopeNotificationSettings', 'updateAnimationSearchParameters', 'updateDefaultReactionType', 'updateAttachmentMenuBots', 'updateSelectedBackground', 'updateSelectedBackground', 'updateFileDownloads', 'updateDiceEmojis', 'updateChatThemes', 'updateChatFilters', 'updateUnreadMessageCount', 'updateChatReadInbox', 'updateHavePendingNotifications', 'updateSuggestedActions', 'updateChatReadOutbox', 'updateAuthorizationState', 'updateChatPosition'
-    else
-      # # p "#UNREG#"
-      # p update
+      meta[:timestamp] = DateTime.now.strftime('%Q').to_i
+      meta[:tdType] = data['@type']
+      meta[:uuid]    = Digest::SHA1.hexdigest("#{meta[:timestamp]}::#{meta[:type]}::#{meta[:profile]}::#{meta[:tdType]}")          
+      #
+      bus.send(meta: meta, data: data)
     end
 
     unless update.nil?
