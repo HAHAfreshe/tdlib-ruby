@@ -37,8 +37,9 @@ class TD::UpdateManagerV2
       meta[:type]   = :update
       meta[:profile]   = profile
       meta[:timestamp] = DateTime.now.strftime('%Q').to_i
-      meta[:tdType] = data['@type']
-      meta[:uuid]    = Digest::SHA1.hexdigest("#{meta[:timestamp]}::#{meta[:type]}::#{meta[:profile]}::#{meta[:tdType]}")          
+      meta[:tdType]    = data['@type']
+      meta[:dataThumb] = Digest::SHA1.hexdigest(update.to_s)
+      meta[:uuid]      = Digest::SHA1.hexdigest("#{meta[:timestamp]}::#{meta[:type]}::#{meta[:profile]}::#{meta[:tdType]}::#{meta[:dataThumb]}")          
       #
       bus.send(meta: meta, data: data)
     end
