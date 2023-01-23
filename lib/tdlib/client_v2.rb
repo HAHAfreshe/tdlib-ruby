@@ -32,7 +32,7 @@ class TD::ClientV2
   # Adds initial authorization state handler and runs update manager
   # Returns future that will be fulfilled when client is ready
   # @return [Concurrent::Promises::Future]
-  def connect
+  def connect(profile=nil, bus=nil)
     on TD::Types::Update::AuthorizationState do |update|
       case update.authorization_state
       when TD::Types::AuthorizationState::WaitTdlibParameters
@@ -46,7 +46,7 @@ class TD::ClientV2
       end
     end
 
-    @update_manager.run
+    @update_manager.run(profile, bus)
     ready
   end
 
