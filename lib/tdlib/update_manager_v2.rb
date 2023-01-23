@@ -28,12 +28,12 @@ class TD::UpdateManagerV2
   def handle_update
     update = TD::ApiV2.client_receive(TIMEOUT)
     case update['@type'] 
-    # when 'updateConnectionState', 'updateOption', 'updateActiveEmojiReactions', 'updateUnreadChatCount', 'updateScopeNotificationSettings', 'updateAnimationSearchParameters', 'updateDefaultReactionType', 'updateAttachmentMenuBots', 'updateSelectedBackground', 'updateSelectedBackground', 'updateFileDownloads', 'updateDiceEmojis', 'updateChatThemes', 'updateChatFilters', 'updateUnreadMessageCount', 'updateChatReadInbox', 'updateHavePendingNotifications', 'updateSuggestedActions', 'updateChatReadOutbox', 'updateAuthorizationState'
+    when 'updateConnectionState', 'updateOption', 'updateActiveEmojiReactions', 'updateUnreadChatCount', 'updateScopeNotificationSettings', 'updateAnimationSearchParameters', 'updateDefaultReactionType', 'updateAttachmentMenuBots', 'updateSelectedBackground', 'updateSelectedBackground', 'updateFileDownloads', 'updateDiceEmojis', 'updateChatThemes', 'updateChatFilters', 'updateUnreadMessageCount', 'updateChatReadInbox', 'updateHavePendingNotifications', 'updateSuggestedActions', 'updateChatReadOutbox', 'updateAuthorizationState', 'updateChatPosition'
     when 'updateUser', 'updateSupergroup', 'updateSupergroupFullInfo', 'updateNewChat', 'updateChatLastMessage', 'updateNewMessage', 'updateUserStatus', 'updateDeleteMessages', 'updateChatAction', 'updateMessageInteractionInfo', 'updateBasicGroup', 'updateMessageContent', 'updateMessageEdited'
       # p update
     else
-      p "#UNREG#"
-      p update
+      # p "#UNREG#"
+      # p update
     end
 
     unless update.nil?
