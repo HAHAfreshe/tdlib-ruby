@@ -12,11 +12,11 @@ class TD::UpdateManagerV2
 
   alias << add_handler
 
-  def run
+  def run(profile, bus)
     #@thread_pool.post do
     #       puts 'post'
     Thread.start do
-      loop { handle_update; sleep 0.00001 }
+      loop { handle_update(profile, bus); sleep 0.00001 }
       @mutex.synchronize { @handlers = [] }
     end
   end
@@ -25,14 +25,18 @@ class TD::UpdateManagerV2
 
   attr_reader :handlers
 
-  def handle_update
+  def handle_update(profile, bus)
     update = TD::ApiV2.client_receive(TIMEOUT)
     case update['@type'] 
-    when 'updateConnectionState', 'updateOption', 'updateActiveEmojiReactions', 'updateUnreadChatCount', 'updateScopeNotificationSettings', 'updateAnimationSearchParameters', 'updateDefaultReactionType', 'updateAttachmentMenuBots', 'updateSelectedBackground', 'updateSelectedBackground', 'updateFileDownloads', 'updateDiceEmojis', 'updateChatThemes', 'updateChatFilters', 'updateUnreadMessageCount', 'updateChatReadInbox', 'updateHavePendingNotifications', 'updateSuggestedActions', 'updateChatReadOutbox', 'updateAuthorizationState', 'updateChatPosition'
     when 'updateUser', 'updateSupergroup', 'updateSupergroupFullInfo', 'updateNewChat', 'updateChatLastMessage', 'updateNewMessage', 'updateUserStatus', 'updateDeleteMessages', 'updateChatAction', 'updateMessageInteractionInfo', 'updateBasicGroup', 'updateMessageContent', 'updateMessageEdited'
-      # p update
+      meta = {}
+      meta[:profile]   = profile
+      meta[:timestamp] = DateTime.now.strftime('%Q')
+      bus.send(meta: meta, data: update.to_h)
+      
+    when 'updateConnectionState', 'updateOption', 'updateActiveEmojiReactions', 'updateUnreadChatCount', 'updateScopeNotificationSettings', 'updateAnimationSearchParameters', 'updateDefaultReactionType', 'updateAttachmentMenuBots', 'updateSelectedBackground', 'updateSelectedBackground', 'updateFileDownloads', 'updateDiceEmojis', 'updateChatThemes', 'updateChatFilters', 'updateUnreadMessageCount', 'updateChatReadInbox', 'updateHavePendingNotifications', 'updateSuggestedActions', 'updateChatReadOutbox', 'updateAuthorizationState', 'updateChatPosition'
     else
-      # p "#UNREG#"
+      # # p "#UNREG#"
       # p update
     end
 
