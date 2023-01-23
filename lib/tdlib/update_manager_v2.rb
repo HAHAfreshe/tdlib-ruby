@@ -30,6 +30,7 @@ class TD::UpdateManagerV2
     case update['@type'] 
     when 'updateUser', 'updateSupergroup', 'updateSupergroupFullInfo', 'updateNewChat', 'updateChatLastMessage', 'updateNewMessage', 'updateUserStatus', 'updateDeleteMessages', 'updateChatAction', 'updateMessageInteractionInfo', 'updateBasicGroup', 'updateMessageContent', 'updateMessageEdited'
       meta = {}
+      meta[:type]   = :update
       meta[:profile]   = profile
       meta[:timestamp] = DateTime.now.strftime('%Q')
       bus.send(meta: meta, data: update.to_h)
