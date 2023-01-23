@@ -1,5 +1,5 @@
 class TD::UpdateManagerV2
-  TIMEOUT = 30
+  TIMEOUT = 20
 
   def initialize
     @handlers = Concurrent::Array.new
@@ -16,7 +16,7 @@ class TD::UpdateManagerV2
     #@thread_pool.post do
     #       puts 'post'
     Thread.start do
-      loop { handle_update; sleep 0.001 }
+      loop { handle_update; sleep 0.00001 }
       @mutex.synchronize { @handlers = [] }
     end
   end
@@ -27,6 +27,14 @@ class TD::UpdateManagerV2
 
   def handle_update
     update = TD::ApiV2.client_receive(TIMEOUT)
+    case update['@type'] 
+    # when 'updateConnectionState', 'updateOption', 'updateActiveEmojiReactions', 'updateUnreadChatCount', 'updateScopeNotificationSettings', 'updateAnimationSearchParameters', 'updateDefaultReactionType', 'updateAttachmentMenuBots', 'updateSelectedBackground', 'updateSelectedBackground', 'updateFileDownloads', 'updateDiceEmojis', 'updateChatThemes', 'updateChatFilters', 'updateUnreadMessageCount', 'updateChatReadInbox', 'updateHavePendingNotifications', 'updateSuggestedActions', 'updateChatReadOutbox', 'updateAuthorizationState'
+    when 'updateUser', 'updateSupergroup', 'updateSupergroupFullInfo', 'updateNewChat', 'updateChatLastMessage', 'updateNewMessage', 'updateUserStatus', 'updateDeleteMessages', 'updateChatAction', 'updateMessageInteractionInfo', 'updateBasicGroup', 'updateMessageContent', 'updateMessageEdited'
+      # p update
+    else
+      p "#UNREG#"
+      p update
+    end
 
     unless update.nil?
       extra  = update.delete('@extra')
